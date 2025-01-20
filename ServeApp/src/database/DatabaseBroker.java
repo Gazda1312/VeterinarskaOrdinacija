@@ -4,74 +4,142 @@
  */
 package database;
 import domen.AbstractDomainObject;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Properties;
-import java.util.function.Supplier;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import java.sql.Statement;
+import java.sql.ResultSet;
+/**
+ *
+ * @author gazda
+ */
 public class DatabaseBroker {
-    private Connection connection = null;
-    private Statement st = null;
+    private static Connection connection;
+
 
     public DatabaseBroker() {
     }
-   
-
     
- 
-    public void connect() {
-        try{
+    public static void openConnection() {
+        try {
             String url = "jdbc:mysql://localhost:3306/veterinar_ordinacija";
             String user = "root";
-            String password = "root";
-            connection = DriverManager.getConnection(url, user, password);
-            System.out.println("Succesfully connected to database.");
+            String pass = "root";
+            connection = DriverManager.getConnection(url,user, pass);
             connection.setAutoCommit(false);
-        }catch (SQLException e) {
-            System.out.println("conn unsuccesful");
-            throw new RuntimeException(e);
+            System.out.println("Database succesfully connected");
+            System.out.println("------------------------------------------");
+        } catch (SQLException ex) {
+            Logger.getLogger(DatabaseBroker.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Connection to database in unsuccesful!");
         }
     }
     
-     public void commitTransaction() throws Exception {
-        try {
-            connection.commit();
-        } catch (SQLException ex) {
-            Logger.getLogger(DatabaseBroker.class.getName()).log(Level.SEVERE, null, ex);
-            ex.printStackTrace();
-            throw new Exception("Neuspesan commit");
-        }
-    }
-
-    public void rollbackTransaction() throws Exception{
-        try {
-            if(connection != null)
-                connection.rollback();
-        } catch (SQLException ex) {
-            Logger.getLogger(DatabaseBroker.class.getName()).log(Level.SEVERE, null, ex);
-            ex.printStackTrace();
-            throw new Exception("Neuspesan rollback");
-        }
-    }
-     
-     
-    public void closeConnection() throws Exception {
-        try {
-            connection.close();
-        } catch (SQLException ex) {
-            Logger.getLogger(DatabaseBroker.class.getName()).log(Level.SEVERE, null, ex);
-            throw new Exception("Konekcija neuspesno zatvorena");
-        }
+    public static void commitTransaction() throws SQLException {
+        connection.commit();
+        System.out.println("Commit");
+        System.out.println("------------------------------------------");
     }
     
-    public ArrayList<AbstractDomainObject> returnAll (AbstractDomainObject ado) throws SQLException, Exception {
-            String query = "SELECT * FROM " + ado.returnClassName() + " WHERE " + ado.returnSearchCondition();
+    public static void rollbackTransaction() throws SQLException {
+        if(connection != null) 
+        connection.rollback();
+        System.out.println("Rollback");
+    }
+    
+    public static void closeConnection() throws SQLException {
+        connection.close();
+        System.out.println("Connection closed!");
+    }
+    
+    public static boolean insertRow(AbstractDomainObject ado) {
+        String query;
+        try {
             Statement st = connection.createStatement();
-            ResultSet rs = st.executeQuery(query);
-            return ado.returnList(rs);
+            query = "INSERT INTO " + ado.returnClassName() + " " + ado.returnInsertColumns() + " VALUES(" + ado.returnAttrValues() + ")";
+            st.executeUpdate(query);
+            st.close();
+        } catch (SQLException esql) {
+            esql.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
+    public static boolean deleteRow(AbstractDomainObject ado) {
+        String query;
+        try {
+           Statement st = connection.createStatement();
+            query = "DELETE FROM " + ado.returnClassName() + " WHERE " + ado.returnSearchCondition();
+            st.executeUpdate(query);
+            st.close();
+        } catch (SQLException esql) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean updateRow(AbstractDomainObject ado) {
+        String query;
+        try {
+           Statement st = connection.createStatement();
+            query = "UPDATE " + ado.returnClassName() +
+                    " SET " + ado.setAttrValues() +
+                    " WHERE " + ado.returnSearchCondition();
+            st.executeUpdate(query);
+            st.close();
+        } catch (SQLException esql) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean doesExist(AbstractDomainObject ado) {
+        String query;
+        ResultSet rows;
+        try {
+           Statement st = connection.createStatement();
+            query = "SELECT *" +
+                    " FROM " + ado.returnClassName() +
+                    " WHERE " + ado.returnSearchCondition();
+            System.out.println(query);
+            rows = st.executeQuery(query);
+            boolean signal = rows.next();
+            rows.close();
+            st.close();
+            return signal;
+        } catch (SQLException esql) {
+            throw new RuntimeException(esql);
+        }
+    }
+
+    public static boolean findRowAndReturn(AbstractDomainObject ado) {
+        ResultSet rs;
+        String query;
+        try {
+            Statement st = connection.createStatement();
+            query = "SELECT * FROM " + ado.returnClassName() + " WHERE " + ado.returnSearchCondition();
+            System.out.println("SQL query: " + query);
+            rs = st.executeQuery(query);
+
+            if (!rs.next()) {
+                System.out.println("No rows found in ResultSet!");
+                return false;
+            }
+
+            System.out.println("Row found, calling setAttributes...");
+            boolean success = ado.setAttributes(rs);
+            rs.close();
+            st.close();
+            return success;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    
 }

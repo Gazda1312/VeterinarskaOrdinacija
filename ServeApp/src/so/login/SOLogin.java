@@ -8,6 +8,7 @@ import abstractSO.AbstractSO;
 import domen.AbstractDomainObject;
 import domen.Veterinar;
 import java.util.ArrayList;
+import java.util.List;
 import logic.ServerController;
 import database.DatabaseBroker;
 /**
@@ -16,56 +17,46 @@ import database.DatabaseBroker;
  */
 public class SOLogin extends AbstractSO{
 
-    private Veterinar loggedIn;
+    private Veterinar currentVeterinar;
+    
+  
+
+    
 
 
     @Override
     protected void validate(AbstractDomainObject ado) throws Exception {
-        if (ado == null) {
-        System.out.println("Prosleđeni objekat je null!");
-        throw new Exception("The object is the wrong type");
+        if(ado instanceof Veterinar) {
+            Veterinar v = (Veterinar) ado;
+            for(Veterinar vet : ServerController.getInstance().getLoggedInVeterinars())
+                if(v.getUsername().equals(vet.getUsername()))
+                    throw new Exception("Vet je vec ulogovan");
+        }else{
+            throw new Exception("Objekat nije instanca Veterinar");
         }
-        if (!(ado instanceof Veterinar)) {
-            System.out.println("Prosleđeni objekat nije instanca Veterinar! Tip: " + ado.getClass().getName());
-            throw new Exception("The object is the wrong type");
-        }
-        System.out.println("Validacija je prošla: " + ado.toString());
     }
 
-    @Override
-    protected void execute(AbstractDomainObject ddo) throws Exception {
-        Veterinar veterinar = (Veterinar) ddo;
+    
 
-        // Dohvatanje svih veterinara iz baze
-        ArrayList<AbstractDomainObject> allVeterinarians = dbb.returnAll(veterinar);
+    public Veterinar getCurrentVeterinar() {
+        return currentVeterinar;
+    }
 
-        // Proverava da li postoji korisnik sa datim username-om i password-om
-        for (AbstractDomainObject obj : allVeterinarians) {
-            Veterinar dbVeterinar = (Veterinar) obj;
-            if (dbVeterinar.getUsername().equals(veterinar.getUsername()) && 
-                dbVeterinar.getPassword().equals(veterinar.getPassword())) {
-
-                // Proverava da li je veterinar već ulogovan
-                for (Veterinar logged : ServerController.getInstance().getLoggedInVeterinars()) {
-                    if (logged.getUsername().equals(dbVeterinar.getUsername())) {
-                        throw new Exception("Veterinar je već ulogovan!");
-                    }
-                }
-
-                // Postavlja ulogovanog veterinara i dodaje ga na listu
-                loggedIn = dbVeterinar;
-                ServerController.getInstance().getLoggedInVeterinars().add(dbVeterinar);
-                break;
-            }
+    
+    protected void execute(AbstractDomainObject ado) throws Exception {
+        Veterinar veterinar = (Veterinar) ado;
+        if(DatabaseBroker.findRowAndReturn(veterinar)) {
+            currentVeterinar = veterinar;
+            ServerController.getInstance().getLoggedInVeterinars().add(veterinar);
+            
+            System.out.println("Uspesan login: " + veterinar.getIme() + veterinar.getPrezime());
+            
+            return;
         }
-
-        // Ako nije pronađen odgovarajući veterinar
-        throw new Exception("Ne postoji veterinar sa zadatim vrednostima.");
+        throw new Exception("Ne postoji!");
     }
 
-    public Veterinar getLoggedIn() {
-        return loggedIn;
-    }
+   
     
     
 }

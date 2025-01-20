@@ -4,38 +4,37 @@
  */
 package logic;
 
+import domen.AbstractDomainObject;
 import domen.Veterinar;
 import java.util.ArrayList;
 import so.login.SOLogin;
-
+import database.DatabaseBroker;
 /**
  *
  * @author gazda
  */
 public class ServerController {
     private static ServerController instance;
-    private ArrayList<Veterinar> loggedInVeterinars = new ArrayList<>();
+    private final ArrayList<Veterinar> loggedInVeterinars = new ArrayList<>();
 
-    public ServerController() {
+    private ServerController() {
+        DatabaseBroker.openConnection();
     }
-
-    public ArrayList<Veterinar> getLoggedInVeterinars() {
-        return loggedInVeterinars;
-    }
-    
-    
     
     public static ServerController getInstance() {
         if(instance == null) instance = new ServerController();
         return instance;
     }
     
+    public ArrayList<Veterinar> getLoggedInVeterinars() {
+        return loggedInVeterinars;
+    }
+
+    
     public Veterinar login(Veterinar veterinar) throws Exception {
-        
-        System.out.println("Veterinar objekat pre slanja u SOLogin: " + veterinar.getIme());
         SOLogin so = new SOLogin();
         so.executeSO(veterinar);
-        return so.getLoggedIn();
+        return so.getCurrentVeterinar();
     }
     
 }

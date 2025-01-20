@@ -4,10 +4,11 @@
  */
 package thread;
 
-import database.DatabaseBroker;
+import domen.Veterinar;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,8 +24,6 @@ public class ServerThread extends Thread{
 
     public ServerThread() {
         try{
-            DatabaseBroker dbb = new DatabaseBroker();
-            dbb.connect();
             serverSocket = new ServerSocket(port);
             System.out.println("Creating server socket on port: " + port);
             clients = new ArrayList<>();
@@ -47,14 +46,25 @@ public class ServerThread extends Thread{
         try{
             while(!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
-                System.out.println("Connection succ!");
-                ClientThread ct = new ClientThread(socket, this);
+                System.out.println("Connection to server socket succesfull!");
+                
+                ClientThread ct = new ClientThread(socket);
                 ct.start();
                 clients.add(ct);             
+                
             }
             
-        } catch (IOException ex) {
+        } catch(SocketException e) {
+            if(serverSocket.isClosed()) {
+                //stopServerThread();
+                System.out.println("Server socket closed. Server shutting down.");
+            } else{
+                e.printStackTrace();
+            }
+        }catch (IOException ex) {
             Logger.getLogger(ServerThread.class.getName()).log(Level.SEVERE, null, ex);
+        }finally{
+            System.out.println("Server stopped.");
         }
         
     }
@@ -78,6 +88,16 @@ public class ServerThread extends Thread{
         }catch(IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public ArrayList<Veterinar> getActiveUsers() {
+        ArrayList<Veterinar> veterinars = new ArrayList<>();
+        for (ClientThread ct : clients) {
+            if (ct.getVeterinar() != null) {
+                veterinars.add(ct.getVeterinar());
+            } 
+        }
+        return veterinars;
     }
 
        

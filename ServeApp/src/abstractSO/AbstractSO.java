@@ -4,24 +4,24 @@
  */
 package abstractSO;
 
-import database.DatabaseBroker;
+
 import domen.AbstractDomainObject;
 import java.sql.SQLException;
-import database.DatabaseBroker;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import database.DatabaseBroker;
+
 
 /**
  *
  * @author gazda
  */
 public abstract class AbstractSO {
-    
-    protected DatabaseBroker dbb;
 
-    public AbstractSO() {
-        this.dbb = new DatabaseBroker();
-    }
+  
+
+    
     
     
     
@@ -42,7 +42,7 @@ public abstract class AbstractSO {
 
     private void commit() throws SQLException {
         try {
-            dbb.commitTransaction();
+          DatabaseBroker.commitTransaction();
         } catch (Exception ex) {
             Logger.getLogger(AbstractSO.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -50,7 +50,7 @@ public abstract class AbstractSO {
     
     private void rollback() throws SQLException{
         try {
-            dbb.rollbackTransaction();
+            DatabaseBroker.rollbackTransaction();
         } catch (Exception ex) {
             Logger.getLogger(AbstractSO.class.getName()).log(Level.SEVERE, null, ex);
         }
