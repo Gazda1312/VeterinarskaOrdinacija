@@ -42,7 +42,14 @@ public class Veterinar extends AbstractDomainObject {
     public Veterinar(String username, String password) {
         this.username = username;
         this.password = password;
+        this.searchCondition="username = '" + username + "' AND password = '" + password + "'";
     }
+
+    @Override
+    public void setSearchCondition(String searchCondition) {
+        this.searchCondition = searchCondition;
+    }
+    
     
     
   
@@ -112,6 +119,14 @@ public class Veterinar extends AbstractDomainObject {
     }
 
     @Override
+    public String toString() {
+        return ime + " " + prezime;
+    }
+
+    
+    
+    
+    @Override
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
@@ -129,80 +144,95 @@ public class Veterinar extends AbstractDomainObject {
         return Objects.equals(this.password, other.password);
     }
 
-    @Override
-    public String toString() {
-        return "Veterinar{" + "ime=" + ime + ", prezime=" + prezime + '}';
-    }
-    
-    
-
+    // Abstract Method Implementations
     @Override
     public String alias() {
-        return "v";
+        return "v"; // Alias for the table Veterinar
     }
 
     @Override
     public String join() {
-        return "";
+        return ""; // No join for this example; add joins for related objects if needed
     }
 
     @Override
     public String returnAttrValues() {
-        return String.format("'%d', '%d', '%s', '%s', '%s', '%s', '%s', %b",
-            idVeterinar, godineIskustva, ime, prezime, specijalizacija, username, password, loggedIn);    
+        return idVeterinar + ", '" + ime + "', '" + prezime + "', " + godineIskustva +
+               ", '" + specijalizacija + "', '" + username + "', '" + password + "'";
     }
 
     @Override
     public String returnClassName() {
-        return "veterinar";
+        return "veterinar"; // Name of the corresponding table in the database
     }
 
     @Override
     public String setAttrValues() {
-        return String.format("godineIskustva = %d, ime = '%s', prezime = '%s', specijalizacija = '%s', username = '%s', password = '%s', loggedIn = %b",
-            godineIskustva, ime, prezime, specijalizacija, username, password, loggedIn);    
+        return "ime='" + ime + "', prezime='" + prezime + "', godineIskustva=" + godineIskustva +
+               ", specijalizacija='" + specijalizacija + "', username='" + username + 
+               "', password='" + password + "'";
     }
 
     @Override
     public String returnInsertColumns() {
-        return "idVeterinar, godineIskustva, ime, prezime, specijalizacija, username, password, loggedIn";    
+        return "(ime, prezime, godineIskustva, specijalizacija, username, password)";
     }
 
     @Override
     public boolean setAttributes(ResultSet rs) {
         try {
-            this.idVeterinar = rs.getInt("idVeterinar");
-            this.godineIskustva = rs.getInt("godineIskustva");
-            this.ime = rs.getString("ime");
-            this.prezime = rs.getString("prezime");
-            this.specijalizacija = rs.getString("specijalizacija");
-            this.username = rs.getString("username");
-            this.password = rs.getString("password");
-            this.loggedIn = rs.getBoolean("loggedIn");
-            return true;
-        }catch (SQLException e) {
+          
+            // Čitanje podataka iz ResultSet
+            int id = rs.getInt("idVeterinar");
+            int godineIskustva = rs.getInt("godineIskustva");
+            String ime = rs.getString("ime");
+            String prezime = rs.getString("prezime");
+            String specijalizacija = rs.getString("specijalizacija");
+            String username = rs.getString("username");
+            String password = rs.getString("password");
+
+            // Log za proveru dobijenih vrednosti
+            System.out.println("Dobijeni podaci iz ResultSet: " + id + ", " + godineIskustva + ", " + ime + ", " + prezime + ", " + specijalizacija + ", " + username + ", " + password);
+
+            // Postavljanje atributa klase
+            this.idVeterinar = id;
+            this.godineIskustva = godineIskustva;
+            this.ime = ime;
+            this.prezime = prezime;
+            this.specijalizacija = specijalizacija;
+            this.username = username;
+            this.password = password;
+
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
-        }    
+        }
+        return true;
     }
 
     @Override
-    public ArrayList<AbstractDomainObject> returnList(ResultSet rs) throws Exception {
-        ArrayList<AbstractDomainObject> veterinarians = new ArrayList<>();
-    
-        while (rs.next()) {
-            Veterinar vet = new Veterinar();
-            // Postavite atribute iz ResultSet-a
-            vet.setIdVeterinar(rs.getInt("id"));
-            vet.setUsername(rs.getString("username"));
-            vet.setPassword(rs.getString("password"));
-            vet.setIme(rs.getString("ime"));
-            vet.setPrezime(rs.getString("prezime"));
-            // Dodajte veterinar u listu
-            veterinarians.add(vet);
+    public LinkedList<AbstractDomainObject> returnList(ResultSet rs) throws Exception {
+        LinkedList<AbstractDomainObject> list = new LinkedList<>();
+        try {
+            while (rs.next()) {
+                Veterinar v = new Veterinar();
+                v.setAttributes(rs);
+                list.add(v);
+            }
+        } catch (SQLException e) {
+            throw new Exception("Error creating the list of Veterinar objects", e);
         }
-        return veterinarians;
+        return list;
     }
+
+    @Override
+    public String returnSearchCondition() {
+        return searchCondition;
+    }
+    
+    
+
+    
 
     
 

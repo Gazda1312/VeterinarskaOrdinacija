@@ -25,7 +25,7 @@ public abstract class AbstractDomainObject implements Serializable {
     public abstract String setAttrValues();
     public abstract String returnInsertColumns();
     public abstract boolean setAttributes(ResultSet rs);
-    public abstract ArrayList<AbstractDomainObject> returnList(ResultSet rs) throws Exception;
+    public abstract LinkedList<AbstractDomainObject> returnList(ResultSet rs) throws Exception;
     
     public void setSearchCondition(String searchCondition){
         this.searchCondition=searchCondition;
